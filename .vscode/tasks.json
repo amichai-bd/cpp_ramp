@@ -1,0 +1,31 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "build hello world",
+            "command": "g++",
+            "args": [
+                "-g",
+                "main.cpp",
+                "-o",
+                "flappy_bird.exe",
+                "-IC:/msys64/SDL2-2.26.5/x86_64-w64-mingw32/include/SDL2",
+                "-LC:/msys64/SDL2-2.26.5/x86_64-w64-mingw32/lib",
+                "-w",
+                "-Wl,-subsystem,windows",
+                "-lmingw32",
+                "-lSDL2main",
+                "-lSDL2",
+                "-Wl,-rpath,C:/msys64/SDL2-2.26.5-win32-x64/api_ms_win"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
