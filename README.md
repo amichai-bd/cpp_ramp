@@ -5,7 +5,7 @@ This repository contains a simple Flappy Bird game implemented using SDL2 and a 
 ## Prerequisites
 
 For Windows:  
-- Install MSYS2 and MinGW-w64.
+- Install C++ compiler using MSYS2.
 - Install the SDL2 library for Windows by following the instructions at the following link: [SDL2](https://github.com/libsdl-org/SDL/releases/tag/release-2.26.5)
 
 For Linux/WSL (Ubuntu):
