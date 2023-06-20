@@ -43,31 +43,80 @@ void shuffleData(std::vector<int>& data) {
     std::shuffle(data.begin(), data.end(), generator);
 }
 
-int main(int argc, char* argv[]) {
-    SDL_Window* window = nullptr;
-    SDL_Renderer* renderer = nullptr;
+SDL_Window* createWindow() {
+    SDL_Window* window = SDL_CreateWindow("Sorting Visualizer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_SHOWN);
+    if (!window) {
+        std::cout << "Failed to create window: " << SDL_GetError() << std::endl;
+        SDL_Quit();
+        return nullptr;
+    }
+    return window;
+}
 
+SDL_Renderer* createRenderer(SDL_Window* window) {
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
+    if (!renderer) {
+        std::cout << "Failed to create renderer: " << SDL_GetError() << std::endl;
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return nullptr;
+    }
+    return renderer;
+}
+
+void handleEvent(SDL_Event& event, std::vector<int>& data, SDL_Rect& button) {
+    if (event.type == SDL_QUIT) {
+        SDL_Quit();
+        exit(0);
+    }
+    if (event.type == SDL_MOUSEBUTTONDOWN) {
+        int x, y;
+        SDL_GetMouseState(&x, &y);
+        if (x >= button.x && x <= button.x + button.w && y >= button.y && y <= button.y + button.h) {
+            shuffleData(data); // Re-randomize data on button press
+        }
+    }
+}
+
+void drawData(std::vector<int>& data, SDL_Renderer* renderer, int windowHeight) {
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Set draw color to black
+    SDL_RenderClear(renderer); // Clear the screen
+
+    // Find maximum value in data for normalization
+    int maxValue = *std::max_element(data.begin(), data.end());
+
+    // Draw a line for each data point
+    for (int i = 0; i < data.size(); i++) {
+        drawLine(renderer, i * 60, data[i], maxValue, 600);
+    }
+}
+
+void drawButton(SDL_Renderer* renderer, SDL_Rect& button) {
+    // Draw "button"
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red color
+    SDL_RenderFillRect(renderer, &button);
+}
+
+void cleanUp(SDL_Renderer* renderer, SDL_Window* window) {
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+}
+
+int main(int argc, char* argv[]) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cout << "Failed to initialize SDL: " << SDL_GetError() << std::endl;
         return 1;
     }
 
-    window = SDL_CreateWindow("Sorting Visualizer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_SHOWN);
-    if (!window) {
-        std::cout << "Failed to create window: " << SDL_GetError() << std::endl;
-        SDL_Quit();
+    SDL_Window* window = createWindow();
+    if(!window)
         return 1;
-    }
 
-    renderer = SDL_CreateRenderer(window, -1, 0);
-    if (!renderer) {
-        std::cout << "Failed to create renderer: " << SDL_GetError() << std::endl;
-        SDL_DestroyWindow(window);
-        SDL_Quit();
+    SDL_Renderer* renderer = createRenderer(window);
+    if(!renderer)
         return 1;
-    }
 
-    // Some example data
     std::vector<int> data(10);
     for (int i = 0; i < 10; i++) {
         data[i] = i;
@@ -75,40 +124,18 @@ int main(int argc, char* argv[]) {
 
     shuffleData(data); // Randomize data
 
-    // Define "button"
-    SDL_Rect button = {600, 20, 100, 50};
+    SDL_Rect button = {600, 20, 100, 50}; // Define "button"
 
     // Main program loop
     bool running = true;
     while (running) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
-                running = false;
-            }
-            if (event.type == SDL_MOUSEBUTTONDOWN) {
-                int x, y;
-                SDL_GetMouseState(&x, &y);
-                if (x >= button.x && x <= button.x + button.w && y >= button.y && y <= button.y + button.h) {
-                    shuffleData(data); // Re-randomize data on button press
-                }
-            }
+            handleEvent(event, data, button);
         }
 
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Set draw color to black
-        SDL_RenderClear(renderer); // Clear the screen
-
-        // Find maximum value in data for normalization
-        int maxValue = *std::max_element(data.begin(), data.end());
-
-        // Draw a line for each data point
-        for (int i = 0; i < data.size(); i++) {
-            drawLine(renderer, i * 60, data[i], maxValue, 600);
-        }
-
-        // Draw "button"
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red color
-        SDL_RenderFillRect(renderer, &button);
+        drawData(data, renderer, 600);
+        drawButton(renderer, button);
 
         SDL_RenderPresent(renderer); // Present the result
 
@@ -116,9 +143,7 @@ int main(int argc, char* argv[]) {
         bubbleSort(data, renderer, 600);
     }
 
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
+    cleanUp(renderer, window);
 
     return 0;
 }
