@@ -2,6 +2,8 @@
 cpp_ramp is a learning project in C++ that explores various concepts and technologies, including the SDL2 library for GUI applications.  
 This repository contains a simple Flappy Bird game implemented using SDL2 and a basic neural network for playing the game.  
 
+currently the compile knows how to compile only the main!!
+Need to be fixed
 ## Prerequisites
 
 For Windows:  
