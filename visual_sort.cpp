@@ -1,101 +1,77 @@
-
 #include <SDL.h>
-#include <iostream>
 #include <vector>
 #include <algorithm>
-#include <chrono>
-#include <random>
 
-void drawLine(SDL_Renderer* renderer, int x, int value, int maxValue, int windowHeight) {
-    int height = (int)(((double)value / maxValue) * windowHeight);
-    SDL_Rect rect = {x, windowHeight - height, 50, height};
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White color
-    SDL_RenderFillRect(renderer, &rect);
-}
+constexpr int WINDOW_WIDTH = 800;
+constexpr int WINDOW_HEIGHT = 600;
+constexpr int RECT_WIDTH = 10;
 
-void bubbleSort(std::vector<int>& data, SDL_Renderer* renderer, int windowHeight) {
-    for(int i = 0; i < data.size() - 1; i++) {
-        for(int j = 0; j < data.size() - i - 1; j++) {
-            if(data[j] > data[j + 1]) {
-                std::swap(data[j], data[j + 1]);
-                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Set draw color to black
-                SDL_RenderClear(renderer); // Clear the screen
+class Quadrant {
+private:
+    SDL_Renderer* renderer;
+    std::vector<int> data;
+    int x, y, width, height, rectWidth;
+    SDL_Rect viewport;
 
-                // Find maximum value in data for normalization
-                int maxValue = *std::max_element(data.begin(), data.end());
+public:
+    Quadrant(SDL_Renderer* renderer, int x, int y, int width, int height, int rectWidth) :
+        renderer(renderer),
+        x(x),
+        y(y),
+        width(width),
+        height(height),
+        rectWidth(rectWidth) {
 
-                // Draw a line for each data point
-                for (int k = 0; k < data.size(); k++) {
-                    drawLine(renderer, k * 60, data[k], maxValue, 600);
+        viewport = { x, y, width, height };
+
+        // Initialize data with random values
+        for (int i = 0; i < width / rectWidth; i++) {
+            data.push_back(rand() % height);
+        }
+    }
+
+    void drawData() {
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Set draw color to black
+        SDL_RenderClear(renderer); // Clear the screen
+
+        // Draw data as white rectangles
+        for (int i = 0; i < data.size(); i++) {
+            draw_rect(i * rectWidth, data[i], height);
+        }
+    }
+
+    void bubbleSort() {
+        for (int i = 0; i < data.size() - 1; i++) {
+            for (int j = 0; j < data.size() - i - 1; j++) {
+                if (data[j] > data[j + 1]) {
+                    std::swap(data[j], data[j + 1]);
+
+                    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Set draw color to black
+                    SDL_RenderClear(renderer); // Clear the screen
+
+                    // Draw data as white rectangles
+                    for (int k = 0; k < data.size(); k++) {
+                        draw_rect(k * rectWidth, data[k], height);
+                    }
+
+                    SDL_RenderPresent(renderer); // Present the result
+                    SDL_Delay(10); // Add delay to visualize sorting
                 }
-
-                SDL_RenderPresent(renderer); // Present the result
-                SDL_Delay(100); // Add delay to visualize sorting
             }
         }
     }
-}
 
-void shuffleData(std::vector<int>& data) {
-    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-    std::default_random_engine generator(seed);
-
-    std::shuffle(data.begin(), data.end(), generator);
-}
-
-SDL_Window* createWindow() {
-    SDL_Window* window = SDL_CreateWindow("Sorting Visualizer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_SHOWN);
-    if (!window) {
-        std::cout << "Failed to create window: " << SDL_GetError() << std::endl;
-        SDL_Quit();
-        return nullptr;
+    void draw_rect(int x, int value, int maxValue) {
+        int height = value * this->height / maxValue;
+        SDL_Rect rect = {this->x + x, this->y + this->height - height, rectWidth * 0.9, height};
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White color
+        SDL_RenderFillRect(renderer, &rect);
     }
-    return window;
-}
 
-SDL_Renderer* createRenderer(SDL_Window* window) {
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
-    if (!renderer) {
-        std::cout << "Failed to create renderer: " << SDL_GetError() << std::endl;
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return nullptr;
+    SDL_Rect* getViewport() {
+        return &viewport;
     }
-    return renderer;
-}
-
-void handleEvent(SDL_Event& event, std::vector<int>& data, SDL_Rect& button) {
-    if (event.type == SDL_QUIT) {
-        SDL_Quit();
-        exit(0);
-    }
-    if (event.type == SDL_MOUSEBUTTONDOWN) {
-        int x, y;
-        SDL_GetMouseState(&x, &y);
-        if (x >= button.x && x <= button.x + button.w && y >= button.y && y <= button.y + button.h) {
-            shuffleData(data); // Re-randomize data on button press
-        }
-    }
-}
-
-void drawData(std::vector<int>& data, SDL_Renderer* renderer, int windowHeight) {
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Set draw color to black
-    SDL_RenderClear(renderer); // Clear the screen
-
-    // Find maximum value in data for normalization
-    int maxValue = *std::max_element(data.begin(), data.end());
-
-    // Draw a line for each data point
-    for (int i = 0; i < data.size(); i++) {
-        drawLine(renderer, i * 60, data[i], maxValue, 600);
-    }
-}
-
-void drawButton(SDL_Renderer* renderer, SDL_Rect& button) {
-    // Draw "button"
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red color
-    SDL_RenderFillRect(renderer, &button);
-}
+};
 
 void cleanUp(SDL_Renderer* renderer, SDL_Window* window) {
     SDL_DestroyRenderer(renderer);
@@ -103,47 +79,97 @@ void cleanUp(SDL_Renderer* renderer, SDL_Window* window) {
     SDL_Quit();
 }
 
-int main(int argc, char* argv[]) {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        std::cout << "Failed to initialize SDL: " << SDL_GetError() << std::endl;
-        return 1;
+
+void drawButton(SDL_Renderer* renderer, SDL_Rect button) {
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Set color to red
+    SDL_RenderFillRect(renderer, &button); // Draw the button
+}
+
+bool checkResetButtonClicked(SDL_Event& event, SDL_Rect button) {
+    if (event.type == SDL_MOUSEBUTTONDOWN) {
+        int x, y;
+        SDL_GetMouseState(&x, &y);
+        return (x >= button.x) && (x <= button.x + button.w) &&
+               (y >= button.y) && (y <= button.y + button.h);
     }
+    return false;
+}
 
-    SDL_Window* window = createWindow();
-    if(!window)
-        return 1;
 
-    SDL_Renderer* renderer = createRenderer(window);
-    if(!renderer)
-        return 1;
-
-    std::vector<int> data(10);
-    for (int i = 0; i < 10; i++) {
-        data[i] = i;
+bool isRunning(SDL_Event& event) {
+    // If the event is SDL_QUIT return false
+    if (event.type == SDL_QUIT) {
+        return false;
     }
+    return true;
+}
 
-    shuffleData(data); // Randomize data
 
-    SDL_Rect button = {600, 20, 100, 50}; // Define "button"
+void initialize(SDL_Window** window, SDL_Renderer** renderer, Quadrant** quadrant1, SDL_Rect* button) {
+    SDL_Init(SDL_INIT_VIDEO);
 
-    // Main program loop
-    bool running = true;
-    while (running) {
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            handleEvent(event, data, button);
+    *window = SDL_CreateWindow("Visual Sort",
+                               SDL_WINDOWPOS_UNDEFINED,
+                               SDL_WINDOWPOS_UNDEFINED,
+                               WINDOW_WIDTH,
+                               WINDOW_HEIGHT,
+                               SDL_WINDOW_SHOWN);
+
+    *renderer = SDL_CreateRenderer(*window, -1, SDL_RENDERER_ACCELERATED);
+
+    *quadrant1 = new Quadrant(*renderer, 0, 0, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, RECT_WIDTH);
+
+    // define button
+    button->x = 0; // Button's x position
+    button->y = 0; // Button's y position
+    button->w = 100; // Button's width
+    button->h = 100; // Button's height
+}
+
+void handleEvents(SDL_Event& event, bool& running, bool& sorting, SDL_Rect& button, Quadrant* quadrant1, SDL_Renderer* renderer) {
+    while (SDL_PollEvent(&event)) {
+        running = isRunning(event);
+
+        if (checkResetButtonClicked(event, button)) {
+            *quadrant1 = Quadrant(renderer, 0, 0, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, RECT_WIDTH);
+            sorting = true;
         }
+    }
+}
 
-        drawData(data, renderer, 600);
-        drawButton(renderer, button);
+void render(SDL_Renderer* renderer, Quadrant* quadrant1, SDL_Rect& button) {
+    SDL_RenderSetViewport(renderer, quadrant1->getViewport());
+    quadrant1->drawData();
 
-        SDL_RenderPresent(renderer); // Present the result
+    // Reset viewport to default for button rendering
+    SDL_RenderSetViewport(renderer, NULL);
+    drawButton(renderer, button);
 
-        // Start bubble sort
-        bubbleSort(data, renderer, 600);
+    SDL_RenderPresent(renderer);
+}
+
+int main(int argc, char* argv[]) {
+    SDL_Window* window;
+    SDL_Renderer* renderer;
+    Quadrant* quadrant1;
+    SDL_Rect button;
+
+    initialize(&window, &renderer, &quadrant1, &button);
+
+    SDL_Event event;
+    bool running = true;
+    bool sorting = true;
+    while (running) {
+        handleEvents(event, running, sorting, button, quadrant1, renderer);
+        render(renderer, quadrant1, button);
+        if (sorting) {
+            quadrant1->bubbleSort();
+            sorting = false;
+        }
     }
 
     cleanUp(renderer, window);
+    delete quadrant1; //don't forget to delete the dynamically allocated memory
 
     return 0;
 }
